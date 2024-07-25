@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import { jwtDecode } from "jwt-decode"; // Corrigi o erro de importação
+import { jwtDecode } from "jwt-decode";
+import FacebookLogin from "react-facebook-login";
 
 // @mui material components
 import Grid from "@mui/material/Grid";
@@ -136,6 +137,26 @@ const Settings = () => {
     return <Slide {...props} direction="up" />;
   };
 
+  const responseFacebook = async (response) => {
+    if (response.accessToken) {
+      try {
+        const { accessToken } = response;
+        const pagesResponse = await axios.get(
+          `https://graph.facebook.com/v20.0/me/accounts?access_token=${accessToken}`
+        );
+        console.log("Páginas:", pagesResponse.data.data);
+        setAlertMessage("Login via Facebook realizado com sucesso!");
+        setAlertSeverity("success");
+        setOpen(true);
+      } catch (error) {
+        console.error("Erro ao listar as páginas:", error);
+        setAlertMessage("Erro ao listar as páginas.");
+        setAlertSeverity("error");
+        setOpen(true);
+      }
+    }
+  };
+
   return (
     <DashboardLayout>
       <DashboardNavbar />
@@ -158,6 +179,15 @@ const Settings = () => {
                 </MDTypography>
               </MDBox>
               <MDBox pt={3} px={3}>
+                <FacebookLogin
+                  appId="426096060385647"
+                  autoLoad={false}
+                  fields="name,email,picture"
+                  scope="public_profile,email,pages_show_list,pages_read_engagement,pages_manage_metadata"
+                  callback={responseFacebook}
+                  icon="fa-facebook"
+                  textButton="Login com Facebook"
+                />
                 <form onSubmit={handleSubmit}>
                   <Grid container spacing={2}>
                     <Grid item xs={12}>
