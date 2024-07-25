@@ -27,7 +27,8 @@ import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 import React, { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import { jwtDecode } from "jwt-decode"; // Corrigi o erro de importação
+import FacebookLogin from "react-facebook-login";
+import { jwtDecode } from "jwt-decode"; // Não mexa aqui. De preferência use aspas duplas nessa página.
 
 /* eslint-disable prettier/prettier */
 
@@ -165,6 +166,10 @@ function Broadcast() {
     return <Slide {...props} direction="up" />;
   };
 
+  const responseFacebook = (response) => {
+    console.log("Facebook response:", response);
+  };
+
   return (
     <DashboardLayout>
       <DashboardNavbar />
@@ -187,6 +192,15 @@ function Broadcast() {
                 </MDTypography>
               </MDBox>
               <MDBox pt={3} px={3}>
+                <FacebookLogin
+                  appId="426096060385647"
+                  autoLoad={false}
+                  fields="name,email,picture"
+                  scope="public_profile,email,pages_show_list,pages_read_engagement,pages_manage_metadata"
+                  callback={responseFacebook}
+                  icon="fa-facebook"
+                  textButton="Login com Facebook"
+                />
                 <Autocomplete
                   multiple
                   options={pages}
