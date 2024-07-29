@@ -27,13 +27,15 @@ import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 import React, { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import { jwtDecode } from "jwt-decode"; // Corrigi o erro de importação
+import FacebookLogin from "react-facebook-login";
+import { jwtDecode } from "jwt-decode"; // Não mexa aqui. De preferência use aspas duplas nessa página.
 
 /* eslint-disable prettier/prettier */
+import "./Broadcast.css"; // Importar arquivo CSS
 
 function Broadcast() {
   const [pages, setPages] = useState([]);
-  const [appAccessToken, setAppAccessToken] = useState("");
+  const [accessToken, setAccessToken] = useState("");
   const [selectedPages, setSelectedPages] = useState([]);
   const [message, setMessage] = useState("");
   const [buttons, setButtons] = useState([{ title: "", url: "" }]);
@@ -52,48 +54,27 @@ function Broadcast() {
     return token;
   }, [navigate]);
 
-  useEffect(() => {
-    const fetchPages = async () => {
-      const token = getToken();
-      if (!token) return;
+  const fetchPages = async (accessToken) => {
+    try {
+      const response = await axios.get(
+        `https://graph.facebook.com/v20.0/me/accounts?access_token=${accessToken}`
+      );
+      setPages(response.data.data);
 
-      try {
-        const decoded = jwtDecode(token);
-        const userId = decoded.userId;
-
-        const settingsResponse = await axios.get(
-          `https://webhook-messenger-67627eb7cfd0.herokuapp.com/api/settings/${userId}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-
-        const { app_access_token } = settingsResponse.data;
-        setAppAccessToken(app_access_token);
-
-        const response = await axios.get(
-          `https://graph.facebook.com/v20.0/me/accounts?access_token=${app_access_token}`
-        );
-        setPages(response.data.data);
-
-        setAlertMessage("Informações carregadas com sucesso!");
-        setAlertSeverity("success");
-        setOpen(true);
-      } catch (error) {
-        console.error("Error fetching pages or settings:", error);
-        setAlertMessage("Erro ao carregar informações.");
-        setAlertSeverity("error");
-        setOpen(true);
-        if (error.response && error.response.status === 401) {
-          localStorage.removeItem("token");
-          navigate("/authentication/sign-in");
-        }
+      setAlertMessage("Informações carregadas com sucesso!");
+      setAlertSeverity("success");
+      setOpen(true);
+    } catch (error) {
+      console.error("Error fetching pages or settings:", error);
+      setAlertMessage("Erro ao carregar informações.");
+      setAlertSeverity("error");
+      setOpen(true);
+      if (error.response && error.response.status === 401) {
+        localStorage.removeItem("token");
+        navigate("/authentication/sign-in");
       }
-    };
-    fetchPages();
-  }, [getToken, navigate]);
+    }
+  };
 
   const handlePageChange = (event, value) => {
     setSelectedPages(value);
@@ -136,7 +117,7 @@ function Broadcast() {
         {
           headers: {
             "Content-Type": "application/json",
-            "app-access-token": appAccessToken,
+            "app-access-token": accessToken,
             Authorization: `Bearer ${token}`,
           },
         }
@@ -165,6 +146,12 @@ function Broadcast() {
     return <Slide {...props} direction="up" />;
   };
 
+  const responseFacebook = (response) => {
+    console.log("Facebook response:", response);
+    setAccessToken(response.accessToken);
+    fetchPages(response.accessToken);
+  };
+
   return (
     <DashboardLayout>
       <DashboardNavbar />
@@ -187,6 +174,16 @@ function Broadcast() {
                 </MDTypography>
               </MDBox>
               <MDBox pt={3} px={3}>
+                <FacebookLogin
+                  appId="426096060385647"
+                  autoLoad={false}
+                  fields="name,email,picture"
+                  scope="public_profile,email,pages_show_list,pages_read_engagement,pages_manage_metadata"
+                  callback={responseFacebook}
+                  icon="fa-facebook"
+                  textButton="Login com Facebook"
+                  cssClass="facebook-login-button"
+                />
                 <Autocomplete
                   multiple
                   options={pages}
@@ -234,7 +231,7 @@ function Broadcast() {
                   <Grid container spacing={2} key={index} alignItems="center">
                     <Grid item xs={5}>
                       <TextField
-                        label={`Texto do Botão ${index + 1}`}
+                        label={`Texto Botão ${index + 1}`}
                         variant="outlined"
                         fullWidth
                         value={button.title}
@@ -244,7 +241,7 @@ function Broadcast() {
                     </Grid>
                     <Grid item xs={5}>
                       <TextField
-                        label={`URL do Botão ${index + 1}`}
+                        label={`URL Botão ${index + 1}`}
                         variant="outlined"
                         fullWidth
                         value={button.url}
@@ -286,7 +283,7 @@ function Broadcast() {
         </Alert>
       </Snackbar>
       <Backdrop
-        sx={{ color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 1 }}
+        sx={{ color: "#fff", zIndex: (theme) => theme.zIndex.drawer + 1 }}
         open={loading}
       >
         <CircularProgress color="inherit" />
