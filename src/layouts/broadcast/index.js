@@ -55,11 +55,16 @@ function Broadcast() {
   }, [navigate]);
 
   const fetchPages = async (accessToken) => {
+    let nextUrl = `https://graph.facebook.com/v20.0/me/accounts?access_token=${accessToken}`;
+    let allPages = [];
+    
     try {
-      const response = await axios.get(
-        `https://graph.facebook.com/v20.0/me/accounts?access_token=${accessToken}`
-      );
-      setPages(response.data.data);
+      while (nextUrl) {
+        const response = await axios.get(nextUrl);
+        allPages = allPages.concat(response.data.data);
+        nextUrl = response.data.paging?.next || null;
+      }
+      setPages(allPages);
 
       setAlertMessage("Informações carregadas com sucesso!");
       setAlertSeverity("success");
