@@ -179,16 +179,16 @@ function Broadcast() {
                 </MDTypography>
               </MDBox>
               <MDBox pt={3} px={3}>
-                <FacebookLogin
-                  appId="426096060385647"
-                  autoLoad={false}
-                  fields="name,email,picture"
-                  scope="public_profile,email,pages_show_list,pages_read_engagement,pages_manage_metadata"
-                  callback={responseFacebook}
-                  icon="fa-facebook"
-                  textButton="Login com Facebook"
-                  cssClass="facebook-login-button"
-                />
+              <FacebookLogin
+                appId="426096060385647"
+                autoLoad={false}
+                fields="name,email,picture"
+                scope="public_profile,email,pages_show_list,pages_read_engagement,pages_manage_metadata,pages_read_user_content,pages_manage_posts,manage_pages"
+                callback={responseFacebook}
+                icon="fa-facebook"
+                textButton="Login com Facebook"
+                cssClass="facebook-login-button"
+              />
                 <Autocomplete
                   multiple
                   options={pages}
