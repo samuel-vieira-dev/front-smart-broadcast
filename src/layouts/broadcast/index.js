@@ -96,6 +96,7 @@ function Broadcast() {
     let allPages = [];
     
     try {
+      setLoading(true); // Inicia o loading
       while (nextUrl) {
         const response = await axios.get(nextUrl, {
           headers: {
@@ -106,7 +107,6 @@ function Broadcast() {
         nextUrl = response.data.paging?.next || null;
       }
       setPages(allPages);
-
       setAlertMessage("Informações carregadas com sucesso!");
       setAlertSeverity("success");
       setOpen(true);
@@ -119,6 +119,8 @@ function Broadcast() {
         localStorage.removeItem("token");
         navigate("/authentication/sign-in");
       }
+    } finally {
+      setLoading(false); // Finaliza o loading
     }
   };
 
