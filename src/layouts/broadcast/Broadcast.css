@@ -1,0 +1,20 @@
+.facebook-login-button {
+    border-radius: 8px !important;
+    padding: 10px 30px !important;
+    background-image: linear-gradient(to right, #2079E9, #459FF0) !important; /* Gradiente do Facebook */
+    color: white !important;
+    font-size: 16px !important;
+    font-weight: bold !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-decoration: none !important;
+    border: none !important;
+    cursor: pointer !important;
+    margin-bottom: 8px !important;
+  }
+  
+  .facebook-login-button .fa-facebook {
+    margin-right: 8px;
+  }
+  
