@@ -42,6 +42,7 @@ function Broadcast() {
   const [message, setMessage] = useState("");
   const [buttons, setButtons] = useState([{ title: "", url: "" }]);
   const [loading, setLoading] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState("");
   const [open, setOpen] = useState(false);
   const [alertMessage, setAlertMessage] = useState("");
   const [alertSeverity, setAlertSeverity] = useState("success");
@@ -76,9 +77,7 @@ function Broadcast() {
       const { app_access_token } = response.data;
       setAppAccessToken(app_access_token || "");
 
-      setAlertMessage("Configurações carregadas com sucesso!");
-      setAlertSeverity("success");
-      setOpen(true);
+      return app_access_token || "";
     } catch (error) {
       console.error("Error fetching settings:", error);
       setAlertMessage("Erro ao carregar configurações.");
@@ -88,14 +87,16 @@ function Broadcast() {
         localStorage.removeItem("token");
         navigate("/authentication/sign-in");
       }
+      return null;
     }
   };
 
-  const fetchPages = async (userId) => {
+  const fetchPages = async (userId, appAccessToken) => {
     let nextUrl = `https://graph.facebook.com/v20.0/${userId}/accounts`;
     let allPages = [];
     
     try {
+      setLoadingMessage("Buscando páginas, por favor aguarde...");
       setLoading(true); // Inicia o loading
       while (nextUrl) {
         const response = await axios.get(nextUrl, {
@@ -106,11 +107,19 @@ function Broadcast() {
         allPages = allPages.concat(response.data.data);
         nextUrl = response.data.paging?.next || null;
       }
-      setPages(allPages);
-      setAlertMessage("Informações carregadas com sucesso!");
-      setAlertSeverity("success");
-      setOpen(true);
+      setLoading(false); // Finaliza o loading
+      if (allPages.length === 0) {
+        setAlertMessage("Nenhuma página encontrada.");
+        setAlertSeverity("info");
+        setOpen(true);
+      } else {
+        setPages(allPages);
+        setAlertMessage("Informações carregadas com sucesso!");
+        setAlertSeverity("success");
+        setOpen(true);
+      }
     } catch (error) {
+      setLoading(false); // Finaliza o loading
       console.error("Error fetching pages or settings:", error);
       setAlertMessage("Erro ao carregar informações.");
       setAlertSeverity("error");
@@ -119,8 +128,6 @@ function Broadcast() {
         localStorage.removeItem("token");
         navigate("/authentication/sign-in");
       }
-    } finally {
-      setLoading(false); // Finaliza o loading
     }
   };
 
@@ -158,6 +165,7 @@ function Broadcast() {
       const token = getToken();
       if (!token) return;
 
+      setLoadingMessage("Enviando broadcast, por favor aguarde...");
       setLoading(true); // Show loading
       await axios.post(
         "https://webhook-messenger-67627eb7cfd0.herokuapp.com/broadcast/send",
@@ -194,12 +202,14 @@ function Broadcast() {
     return <Slide {...props} direction="up" />;
   };
 
-  const responseFacebook = (response) => {
+  const responseFacebook = async (response) => {
     console.log("Facebook response:", response);
     setAccessToken(response.accessToken);
     setUserId(response.userID);
-    fetchSettings();
-    fetchPages(response.userID);
+    const appAccessToken = await fetchSettings();
+    if (appAccessToken) {
+      fetchPages(response.userID, appAccessToken);
+    }
   };
 
   return (
@@ -338,7 +348,7 @@ function Broadcast() {
       >
         <CircularProgress color="inherit" />
         <MDTypography variant="h6" color="white" sx={{ ml: 2 }}>
-          Enviando broadcast, por favor aguarde...
+          {loadingMessage}
         </MDTypography>
       </Backdrop>
     </DashboardLayout>
