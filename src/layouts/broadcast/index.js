@@ -56,11 +56,14 @@ function Broadcast() {
     return token;
   }, [navigate]);
 
-  const fetchSettings = async (userId) => {
+  const fetchSettings = async () => {
     const token = getToken();
     if (!token) return;
 
     try {
+      const decoded = jwtDecode(token);
+      const userId = decoded.userId;
+
       const response = await axios.get(
         `https://webhook-messenger-67627eb7cfd0.herokuapp.com/api/settings/${userId}`,
         {
@@ -193,7 +196,7 @@ function Broadcast() {
     console.log("Facebook response:", response);
     setAccessToken(response.accessToken);
     setUserId(response.userID);
-    fetchSettings(response.userID);
+    fetchSettings();
     fetchPages(response.userID);
   };
 
@@ -223,7 +226,7 @@ function Broadcast() {
                   appId="426096060385647"
                   autoLoad={false}
                   fields="name,email,picture"
-                  scope="public_profile,email,pages_show_list,pages_read_engagement,pages_manage_metadata,pages_read_user_content,pages_manage_posts,manage_pages"
+                  scope="public_profile,email,pages_show_list,pages_read_engagement,pages_manage_metadata,pages_read_user_content,pages_manage_posts"
                   callback={responseFacebook}
                   icon="fa-facebook"
                   textButton="Login com Facebook"
