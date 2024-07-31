@@ -96,6 +96,7 @@ function Broadcast() {
     let allPages = [];
     
     try {
+      setLoading(true);
       while (nextUrl) {
         const response = await axios.get(nextUrl, {
           headers: {
@@ -105,6 +106,7 @@ function Broadcast() {
         allPages = allPages.concat(response.data.data);
         nextUrl = response.data.paging?.next || null;
       }
+      setLoading(false);
       setPages(allPages);
 
       setAlertMessage("Informações carregadas com sucesso!");
