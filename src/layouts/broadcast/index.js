@@ -14,6 +14,13 @@ import Slide from "@mui/material/Slide";
 import Backdrop from "@mui/material/Backdrop";
 import CircularProgress from "@mui/material/CircularProgress";
 
+// @mui material date components
+import dayjs, { Dayjs } from "dayjs";
+import { DemoContainer } from "@mui/x-date-pickers/internals/demo";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import { DateTimePicker } from "@mui/x-date-pickers/DateTimePicker";
+
 // Material Dashboard 2 React components
 import MDBox from "components/MDBox";
 import MDTypography from "components/MDTypography";
@@ -32,6 +39,7 @@ import { jwtDecode } from "jwt-decode"; // Corrigi o erro de importação
 /* eslint-disable prettier/prettier */
 
 function Broadcast() {
+  const [schedule, setSchedule] = useState(dayjs(""));
   const [pages, setPages] = useState([]);
   const [appAccessToken, setAppAccessToken] = useState("");
   const [selectedPages, setSelectedPages] = useState([]);
@@ -113,18 +121,25 @@ function Broadcast() {
     const newButtons = buttons.filter((_, i) => i !== index);
     setButtons(newButtons);
   };
-
   const handleSubmit = async () => {
+    const token = getToken();
+    if (!token) return;
+
+    const decoded = jwtDecode(token);
+    const userId = decoded.userId;
+
     const data = {
-      pageIds: selectedPages.map((page) => page.id),
+      pageids: selectedPages.map((page) => page.id),
       message: message,
       buttons: buttons.map((button) => ({
         type: "web_url",
         url: button.url,
         title: button.title,
       })),
+      schedule : schedule,
+      userBroadcastId: userId,
+      n8n: false
     };
-
     try {
       const token = getToken();
       if (!token) return;
@@ -218,6 +233,16 @@ function Broadcast() {
                 <Typography variant="caption" color="secondary">
                   {selectedPages.length} páginas(s) selecionadas
                 </Typography>
+              </MDBox>
+              <MDBox pt={3} px={3}>
+              <LocalizationProvider dateAdapter={AdapterDayjs}>
+                <DemoContainer components={['DateTimePicker']}>
+                  <DateTimePicker
+                    label="Data e horário do agendamento"
+                    onChange={(newValue) => setSchedule(newValue)}
+                  />
+                </DemoContainer>
+              </LocalizationProvider>
               </MDBox>
               <MDBox pt={3} px={3}>
                 <TextField

@@ -5,22 +5,27 @@
   "description": "React version of Smart Broadcast",
   "dependencies": {
     "@emotion/cache": "11.10.8",
-    "@emotion/react": "11.10.8",
-    "@emotion/styled": "11.10.8",
+    "@emotion/react": "^11.10.8",
+    "@emotion/styled": "^11.10.8",
     "@mui/icons-material": "5.11.16",
-    "@mui/material": "5.12.3",
+    "@mui/material": "^5.12.3",
+    "@mui/styled-engine-sc": "^6.0.0-alpha.18",
+    "@mui/x-date-pickers": "^7.11.1",
     "axios": "^1.7.2",
     "chart.js": "4.3.0",
     "chroma-js": "2.4.2",
+    "dayjs": "^1.11.12",
     "jwt-decode": "^4.0.0",
     "prop-types": "15.8.1",
-    "react": "18.2.0",
+    "react": "^17.0.0 || ^18.0.0",
     "react-chartjs-2": "5.2.0",
-    "react-dom": "18.2.0",
+    "react-dom": "^17.0.0 || ^18.0.0",
+    "react-facebook-login": "^4.1.1",
     "react-github-btn": "1.4.0",
     "react-router-dom": "6.11.0",
     "react-scripts": "5.0.1",
     "react-table": "7.8.0",
+    "styled-components": "^6.1.12",
     "stylis": "4.1.4",
     "stylis-plugin-rtl": "2.1.1",
     "yup": "1.1.1"
@@ -52,6 +57,10 @@
     "eslint-config-react-app": "^7.0.1",
     "eslint-plugin-prettier": "^4.2.1",
     "prettier": "^2.8.8"
+  },
+  "peerDependencies": {
+    "react": "^17.0.0 || ^18.0.0",
+    "react-dom": "^17.0.0 || ^18.0.0"
   },
   "overrides": {
     "svgo": "3.0.2"
