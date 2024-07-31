@@ -36,6 +36,8 @@ import "./Broadcast.css"; // Importar arquivo CSS
 function Broadcast() {
   const [pages, setPages] = useState([]);
   const [accessToken, setAccessToken] = useState("");
+  const [userId, setUserId] = useState("");
+  const [appAccessToken, setAppAccessToken] = useState("");
   const [selectedPages, setSelectedPages] = useState([]);
   const [message, setMessage] = useState("");
   const [buttons, setButtons] = useState([{ title: "", url: "" }]);
@@ -54,13 +56,49 @@ function Broadcast() {
     return token;
   }, [navigate]);
 
-  const fetchPages = async (accessToken) => {
-    let nextUrl = `https://graph.facebook.com/v20.0/me/accounts?access_token=${accessToken}`;
+  const fetchSettings = async (userId) => {
+    const token = getToken();
+    if (!token) return;
+
+    try {
+      const response = await axios.get(
+        `https://webhook-messenger-67627eb7cfd0.herokuapp.com/api/settings/${userId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const { app_access_token } = response.data;
+      setAppAccessToken(app_access_token || "");
+
+      setAlertMessage("Configurações carregadas com sucesso!");
+      setAlertSeverity("success");
+      setOpen(true);
+    } catch (error) {
+      console.error("Error fetching settings:", error);
+      setAlertMessage("Erro ao carregar configurações.");
+      setAlertSeverity("error");
+      setOpen(true);
+      if (error.response && error.response.status === 401) {
+        localStorage.removeItem("token");
+        navigate("/authentication/sign-in");
+      }
+    }
+  };
+
+  const fetchPages = async (userId) => {
+    let nextUrl = `https://graph.facebook.com/v20.0/${userId}/accounts`;
     let allPages = [];
     
     try {
       while (nextUrl) {
-        const response = await axios.get(nextUrl);
+        const response = await axios.get(nextUrl, {
+          headers: {
+            Authorization: `Bearer ${appAccessToken}`
+          }
+        });
         allPages = allPages.concat(response.data.data);
         nextUrl = response.data.paging?.next || null;
       }
@@ -122,7 +160,7 @@ function Broadcast() {
         {
           headers: {
             "Content-Type": "application/json",
-            "app-access-token": accessToken,
+            "app-access-token": appAccessToken,
             Authorization: `Bearer ${token}`,
           },
         }
@@ -154,7 +192,9 @@ function Broadcast() {
   const responseFacebook = (response) => {
     console.log("Facebook response:", response);
     setAccessToken(response.accessToken);
-    fetchPages(response.accessToken);
+    setUserId(response.userID);
+    fetchSettings(response.userID);
+    fetchPages(response.userID);
   };
 
   return (
@@ -179,16 +219,16 @@ function Broadcast() {
                 </MDTypography>
               </MDBox>
               <MDBox pt={3} px={3}>
-              <FacebookLogin
-                appId="426096060385647"
-                autoLoad={false}
-                fields="name,email,picture"
-                scope="public_profile,email,pages_show_list,pages_read_engagement,pages_manage_metadata,pages_read_user_content,pages_manage_posts,manage_pages"
-                callback={responseFacebook}
-                icon="fa-facebook"
-                textButton="Login com Facebook"
-                cssClass="facebook-login-button"
-              />
+                <FacebookLogin
+                  appId="426096060385647"
+                  autoLoad={false}
+                  fields="name,email,picture"
+                  scope="public_profile,email,pages_show_list,pages_read_engagement,pages_manage_metadata,pages_read_user_content,pages_manage_posts,manage_pages"
+                  callback={responseFacebook}
+                  icon="fa-facebook"
+                  textButton="Login com Facebook"
+                  cssClass="facebook-login-button"
+                />
                 <Autocomplete
                   multiple
                   options={pages}
