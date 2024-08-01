@@ -1,3 +1,4 @@
+/* eslint-disable prettier/prettier */
 // @mui material components
 import Grid from "@mui/material/Grid";
 import Card from "@mui/material/Card";
@@ -37,7 +38,7 @@ import axios from "axios";
 import FacebookLogin from "react-facebook-login";
 import { jwtDecode } from "jwt-decode"; // Não mexa aqui. De preferência use aspas duplas nessa página.
 
-/* eslint-disable prettier/prettier */
+
 import "./Broadcast.css"; // Importar arquivo CSS
 
 function Broadcast() {
@@ -295,6 +296,7 @@ function Broadcast() {
               <LocalizationProvider dateAdapter={AdapterDayjs}>
                 <DemoContainer components={['DateTimePicker']}>
                   <DateTimePicker
+                    className="custom-date-time-picker"
                     label="Data e horário do agendamento"
                     onChange={(newValue) => setSchedule(newValue)}
                   />
