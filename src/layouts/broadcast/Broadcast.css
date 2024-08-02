@@ -17,4 +17,8 @@
   .facebook-login-button .fa-facebook {
     margin-right: 8px;
   }
+
+  .MuiMultiSectionDigitalClockSection-root .MuiButtonBase-root.MuiMenuItem-root {
+    min-width: 0rem !important;
+  }
   
