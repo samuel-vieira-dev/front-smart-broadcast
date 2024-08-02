@@ -21,7 +21,6 @@ import { DemoContainer } from "@mui/x-date-pickers/internals/demo";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { DateTimePicker } from "@mui/x-date-pickers/DateTimePicker";
-
 // Material Dashboard 2 React components
 import MDBox from "components/MDBox";
 import MDTypography from "components/MDTypography";
@@ -38,11 +37,11 @@ import axios from "axios";
 import FacebookLogin from "react-facebook-login";
 import { jwtDecode } from "jwt-decode"; // Não mexa aqui. De preferência use aspas duplas nessa página.
 
-
 import "./Broadcast.css"; // Importar arquivo CSS
 
 function Broadcast() {
-  const [schedule, setSchedule] = useState(dayjs(""));
+
+  const [schedule, setSchedule] = useState(null);
   const [pages, setPages] = useState([]);
   const [accessToken, setAccessToken] = useState("");
   const [userId, setUserId] = useState("");
@@ -298,7 +297,7 @@ function Broadcast() {
                   <DateTimePicker
                     className="custom-date-time-picker"
                     label="Data e horário do agendamento"
-                    onChange={(newValue) => setSchedule(newValue)}
+                    onChange={(newValue) => setSchedule(dayjs(newValue))}
                   />
                 </DemoContainer>
               </LocalizationProvider>
