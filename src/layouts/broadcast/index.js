@@ -91,25 +91,24 @@ function Broadcast() {
       setAlertMessage("Erro ao carregar configurações.");
       setAlertSeverity("error");
       setOpen(true);
-      if (error.response && error.response.status === 401) {
-        localStorage.removeItem("token");
-        navigate("/authentication/sign-in");
-      }
+      // if (error.response && error.response.status === 401) {
+      //   localStorage.removeItem("token");
+      //   navigate("/authentication/sign-in");
+      // }
       return null;
     }
   };
 
   const fetchPages = async (userId, appAccessToken) => {
-    let nextUrl = `https://graph.facebook.com/v20.0/${userId}/accounts`;
+    let nextUrl = `https://graph.facebook.com/v20.0/${userId}/accounts?access_token=${accessToken}`;
     let allPages = [];
-    
     try {
       setLoadingMessage("Buscando páginas, por favor aguarde...");
       setLoading(true); // Inicia o loading
       while (nextUrl) {
         const response = await axios.get(nextUrl, {
           headers: {
-            Authorization: `Bearer ${appAccessToken}`
+            Authorization: `Bearer ${accessToken}`
           }
         });
         allPages = allPages.concat(response.data.data);
