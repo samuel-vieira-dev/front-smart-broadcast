@@ -81,28 +81,22 @@ function Broadcast() {
           },
         }
       );
-
-      const { app_access_token } = response.data;
-      setAppAccessToken(app_access_token || "");
-
-      return app_access_token || "";
+      const { accessToken } = response.data;
+      setAppAccessToken(accessToken || "");
+      return accessToken || "";
     } catch (error) {
       console.error("Error fetching settings:", error);
       setAlertMessage("Erro ao carregar configurações.");
       setAlertSeverity("error");
       setOpen(true);
-      if (error.response && error.response.status === 401) {
-        localStorage.removeItem("token");
-        navigate("/authentication/sign-in");
-      }
       return null;
     }
   };
 
-  const fetchPages = async (userId, appAccessToken) => {
-    let nextUrl = `https://graph.facebook.com/v20.0/${userId}/accounts`;
+  const fetchPages = async () => {
+    console.log('dsadsa')
+    let nextUrl = `https://graph.facebook.com/v20.0/${userId}/accounts?access_token=${accessToken}`;
     let allPages = [];
-    
     try {
       setLoadingMessage("Buscando páginas, por favor aguarde...");
       setLoading(true); // Inicia o loading
@@ -162,8 +156,6 @@ function Broadcast() {
     if (!token) return;
 
     const decoded = jwtDecode(token);
-    const userId = decoded.userId;
-
     const data = {
       pageids: selectedPages.map((page) => page.id),
       message: message,
@@ -173,8 +165,8 @@ function Broadcast() {
         title: button.title,
       })),
       schedule : schedule,
-      userBroadcastId: userId,
-      n8n: false
+      userId: decoded.userId,
+      n8n: false,
     };
     try {
       const token = getToken();
@@ -188,7 +180,7 @@ function Broadcast() {
         {
           headers: {
             "Content-Type": "application/json",
-            "app-access-token": appAccessToken,
+            "app-access-token": accessToken,
             Authorization: `Bearer ${token}`,
           },
         }
@@ -226,6 +218,9 @@ function Broadcast() {
       fetchPages(response.userID, appAccessToken);
     }
   };
+  const addVariableInMessageBroad = (typeVariabel) => {
+    setMessage((prevMessage) => prevMessage + typeVariabel + ' ')
+  };
 
   return (
     <DashboardLayout>
@@ -253,7 +248,7 @@ function Broadcast() {
                   appId="426096060385647"
                   autoLoad={false}
                   fields="name,email,picture"
-                  scope="public_profile,email,pages_show_list,pages_read_engagement,pages_manage_metadata,pages_read_user_content,pages_manage_posts"
+                  scope="public_profile,email,pages_show_list,pages_read_engagement,pages_manage_metadata,pages_read_user_content,pages_manage_posts,pages_messaging"
                   callback={responseFacebook}
                   icon="fa-facebook"
                   textButton="Login com Facebook"
@@ -303,6 +298,28 @@ function Broadcast() {
               </LocalizationProvider>
               </MDBox>
               <MDBox pt={3} px={3}>
+                <MDBox>
+                  <MDTypography variant="h6">
+                    Adicionar váriaveis ao texto do broadCast
+                  </MDTypography>
+                    <Grid container spacing={2} alignItems="center" maxWidth={1020}>
+                          <Grid item xs={2}>
+                          <MDButton variant="contained" color="success" onClick={() => addVariableInMessageBroad('{{first_name}}')}>
+                            Primeiro nome
+                          </MDButton>
+                          </Grid>
+                          <Grid item xs={2}>
+                          <MDButton variant="contained" color="success" onClick={() => addVariableInMessageBroad('{{last_name}}')}>
+                            Ultimo nome
+                          </MDButton>
+                          </Grid>
+                          <Grid item xs={2}>
+                          <MDButton variant="contained" color="success" onClick={() => addVariableInMessageBroad('{{full_name}}')}>
+                            Nome completo
+                          </MDButton>
+                        </Grid>
+                    </Grid>
+                </MDBox>
                 <TextField
                   label="Copy do Broadcast"
                   multiline
