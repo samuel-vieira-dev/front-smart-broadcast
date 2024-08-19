@@ -97,18 +97,14 @@ function Broadcast() {
     }
   };
 
-  const fetchPages = async () => {
+  const fetchPages = async (userId, accessToken) => {
     let nextUrl = `https://graph.facebook.com/v20.0/${userId}/accounts?access_token=${accessToken}`;
     let allPages = [];
     try {
       setLoadingMessage("Buscando páginas, por favor aguarde...");
       setLoading(true); // Inicia o loading
       while (nextUrl) {
-        const response = await axios.get(nextUrl, {
-          headers: {
-            Authorization: `Bearer ${appAccessToken}`,
-          },
-        });
+        const response = await axios.get(nextUrl, {});
         allPages = allPages.concat(response.data.data);
         nextUrl = response.data.paging?.next || null;
       }
@@ -130,10 +126,6 @@ function Broadcast() {
       setAlertMessage("Erro ao carregar informações.");
       setAlertSeverity("error");
       setOpen(true);
-      if (error.response && error.response.status === 401) {
-        localStorage.removeItem("token");
-        navigate("/authentication/sign-in");
-      }
     }
   };
 
@@ -218,7 +210,7 @@ function Broadcast() {
     setSelectedPages([])
     const appAccessToken = await fetchSettings();
     if (appAccessToken) {
-      fetchPages(response.userID, appAccessToken)
+      fetchPages(response.userID, response.accessToken)
     }
   };
   const addVariableInMessageBroad = (typeVariabel) => {
