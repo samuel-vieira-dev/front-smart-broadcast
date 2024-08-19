@@ -2,128 +2,105 @@
 import Grid from "@mui/material/Grid";
 import Card from "@mui/material/Card";
 import MDBox from "components/MDBox";
-import { DataGrid } from "@mui/x-data-grid";
+import TextField from "@mui/material/TextField";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 
 // Material Dashboard 2 React example components
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 import MDTypography from "components/MDTypography";
-
-// Data
-import reportsBarChartData from "layouts/dashboard/data/reportsBarChartData";
-import reportsLineChartData from "layouts/dashboard/data/reportsLineChartData";
+import Snackbar from "@mui/material/Snackbar";
+import Alert from "@mui/material/Alert";
+import Slide from "@mui/material/Slide";
+import VisibilityIcon from "@mui/icons-material/Visibility";
+import ModeEditIcon from "@mui/icons-material/ModeEdit";
 
 // Dashboard components
-import Projects from "layouts/dashboard/components/Projects";
-import OrdersOverview from "layouts/dashboard/components/OrdersOverview";
+import MDButton from "components/MDButton";
 
 // Dark thema
 import { ThemeProvider, createTheme } from "@mui/material/styles";
 import themeRTL from "assets/theme/theme-rtl";
 import { useMaterialUIController } from "context";
+import { useNavigate } from "react-router-dom";
+import React, { useEffect, useState, useCallback } from "react";
+import { jwtDecode } from "jwt-decode"; // Não mexa aqui. De preferência use aspas duplas nessa página.
+import axios from "axios";
+import "dayjs/locale/pt-br";
 
 function Dashboard() {
   const [controller] = useMaterialUIController();
-  const { darkMode } = controller;
+  const { darkMode, sidenavColor } = controller;
+
   const darkTheme = createTheme({
     palette: {
       mode: "dark",
     },
   });
+  const [dadosBroad, setDadosBroad] = useState(null);
+  const [alertMessage, setAlertMessage] = useState("");
+  const [open, setOpen] = useState(false);
+  const [alertSeverity, setAlertSeverity] = useState("success");
+  const navigate = useNavigate();
 
-  const localizedTextsMap = {
-    columnMenuUnsort: "não classificado",
-    columnMenuSortAsc: "Classificar por ordem crescente",
-    columnMenuSortDesc: "Classificar por ordem decrescente",
-    columnMenuFilter: "Filtro",
-    columnMenuHideColumn: "Ocultar",
-    columnMenuShowColumns: "Mostrar colunas",
+  const getToken = useCallback(() => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      navigate("/authentication/sign-in");
+      return null;
+    }
+    return token;
+  }, [navigate]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const token = getToken();
+      if (!token) return;
+      try {
+        const decoded = jwtDecode(token);
+        const userId = decoded.userId;
+        const response = await axios.get(
+          `https://webhook-messenger-67627eb7cfd0.herokuapp.com/broadcast/getDetails/${userId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        setDadosBroad(response.data);
+      } catch (error) {
+        console.error("Erro ao enviar broadcast:", error);
+        setAlertMessage("Erro ao enviar broadcast. Por favor, tente novamente.");
+        setAlertSeverity("error");
+        setOpen(true);
+      }
+    };
+    fetchData();
+  }, []);
+
+  const handleClose = (event, reason) => {
+    if (reason === "clickaway") {
+      return;
+    }
+    setOpen(false);
   };
+  const TransitionUp = (props) => {
+    return <Slide {...props} direction="up" />;
+  };
+  const [searchQuery, setSearchQuery] = useState("");
 
-  const columns = [
-    { field: "id", headerName: "Id Broad", width: 120 },
-    { field: "mensage", headerName: "Mensagem", width: 300 },
-    { field: "scheduleAt", headerName: "Agendamento", width: 200 },
-    {
-      field: "pages",
-      headerName: "Páginas",
-      width: 200,
-    },
-    {
-      field: "status",
-      headerName: "Status",
-      description: "Esse status mostra quantas mensagem deram certo de ser enviada",
-      sortable: false,
-      width: 250,
-    },
-  ];
+  // const [startDate, setStartDate] = useState("");
+  // const [endDate, setEndDate] = useState("");
 
-  const rows = [
-    {
-      id: 1,
-      scheduleAt: "20/12/2024 10h30m",
-      mensage: "Jon",
-      pages: "Bia triz, romeeiro brito, breno brenom teste teste",
-      status: "500 enviado 5 não enviado",
-    },
-    {
-      id: 2,
-      scheduleAt: "20/12/2024 10h30m",
-      mensage: "Cersei",
-      pages: "Bia triz, romeeiro brito, breno brenom teste teste",
-      status: "500 enviado 5 não enviado",
-    },
-    {
-      id: 3,
-      scheduleAt: "20/12/2024 10h30m",
-      mensage: "Jaime",
-      pages: "Bia triz, romeeiro brito, breno brenom teste teste",
-      status: "500 enviado 5 não enviado",
-    },
-    {
-      id: 4,
-      scheduleAt: "Sem agendamento",
-      mensage: "Arya",
-      pages: "Bia triz, romeeiro brito, breno brenom teste teste",
-      status: "500 enviado 5 não enviado",
-    },
-    {
-      id: 5,
-      scheduleAt: "20/12/2024 10h30m",
-      mensage: "Daenerys",
-      pages: null,
-      status: "500 enviado 5 não enviado",
-    },
-    {
-      id: 6,
-      scheduleAt: "20/12/2024 10h30m",
-      mensage: null,
-      pages: "Bia triz, romeeiro brito, breno brenom teste teste",
-      status: "500 enviado 5 não enviado",
-    },
-    {
-      id: 7,
-      scheduleAt: "20/12/2024 10h30m",
-      mensage: "Ferrara",
-      pages: "Bia triz, romeeiro brito, breno brenom teste teste",
-      status: "500 enviado 5 não enviado",
-    },
-    {
-      id: 8,
-      scheduleAt: "20/12/2024 10h30m",
-      mensage: "Rossini",
-      pages: "Bia triz, romeeiro brito, breno brenom teste teste",
-      status: "500 enviado 5 não enviado",
-    },
-    {
-      id: 9,
-      scheduleAt: "20/12/2024 10h30m",
-      mensage: "Harvey",
-      pages: "Bia triz, romeeiro brito, breno brenom teste teste",
-      status: "500 enviado 5 não enviado",
-    },
-  ];
-  const { sales, tasks } = reportsLineChartData;
+  // const handleSearch = () => {
+  //   // onSearch(searchQuery);
+  // };
+
+  // const handleFilter = () => {
+  //   // onFilter(startDate, endDate);
+  // };
 
   return (
     <DashboardLayout>
@@ -147,24 +124,98 @@ function Dashboard() {
               </MDBox>
               <MDBox pt={4} px={4} pb={3}>
                 <ThemeProvider theme={darkMode ? darkTheme : themeRTL}>
-                  <DataGrid
-                    rows={rows}
-                    columns={columns}
-                    initialState={{
-                      pagination: {
-                        paginationModel: { page: 0, pageSize: 5 },
-                      },
+                  <MDBox
+                    style={{
+                      display: "flex",
+                      fontWeight: "bold",
+                      paddingBottom: "20px",
+                      borderBottom: "4px solid white",
                     }}
-                    pageSizeOptions={[5, 10]}
-                    checkboxSelection
-                    localeText={localizedTextsMap}
-                  />
+                  >
+                    <TextField
+                      label="Buscar"
+                      variant="outlined"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      style={{ marginRight: "20px", flexGrow: 1 }}
+                    />
+                    <MDBox
+                      style={{
+                        display: "flex",
+                        padding: 0,
+                        gap: "4px",
+                      }}
+                    >
+                      <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="pt-br">
+                        <DatePicker label="Data incial" />
+                      </LocalizationProvider>
+                      <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="pt-br">
+                        <DatePicker label="Data final" />
+                      </LocalizationProvider>
+                    </MDBox>
+                    <MDBox ml="8px">
+                      <MDButton variant="gradient" color={sidenavColor} fullWidth>
+                        Buscar
+                      </MDButton>
+                    </MDBox>
+                  </MDBox>
+                  <MDBox style={{ backgroundColor: "#f0f0f0", borderRadius: "5px" }}>
+                    {dadosBroad?.map((item) => (
+                      <MDBox
+                        key={item._id}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          padding: "20px",
+                          borderBottom: "8px solid white",
+                          gap: "10px",
+                        }}
+                      >
+                        <MDBox style={{ flex: 1 }}>
+                          <MDTypography variant="subtitle2" style={{ flex: 1 }}>
+                            Id Broad
+                          </MDTypography>
+                          <MDTypography variant="h6" style={{ flex: 1 }}>
+                            {item._id}
+                          </MDTypography>
+                        </MDBox>
+                        <MDBox variant="h6" style={{ flex: 1 }}>
+                          <MDTypography variant="subtitle2" style={{ flex: 1 }}>
+                            Data do Agendamento
+                          </MDTypography>
+                          <MDTypography variant="h6" style={{ flex: 1 }}>
+                            {item.scheduledAt || "Não agendado"}
+                          </MDTypography>
+                        </MDBox>
+                        <MDBox style={{ flex: 1 }}>
+                          <MDTypography variant="subtitle2" style={{ flex: 1 }}>
+                            Ações
+                          </MDTypography>
+                          <MDBox style={{ paddingTop: "10px" }}>
+                            <VisibilityIcon style={{ marginRight: "20px" }}></VisibilityIcon>
+                            <ModeEditIcon></ModeEditIcon>
+                          </MDBox>
+                        </MDBox>
+                      </MDBox>
+                    ))}
+                  </MDBox>
                 </ThemeProvider>
               </MDBox>
             </Card>
           </Grid>
         </Grid>
       </MDBox>
+      <Snackbar
+        open={open}
+        autoHideDuration={5000}
+        onClose={handleClose}
+        TransitionComponent={TransitionUp}
+        anchorOrigin={{ vertical: "center", horizontal: "center" }}
+      >
+        <Alert onClose={handleClose} severity={alertSeverity}>
+          {alertMessage}
+        </Alert>
+      </Snackbar>
       {/* <MDBox py={3}>
         <Grid container spacing={3}>
           <Grid item xs={12} md={6} lg={3}>

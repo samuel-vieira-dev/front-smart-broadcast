@@ -40,7 +40,6 @@ import { jwtDecode } from "jwt-decode"; // Não mexa aqui. De preferência use a
 import "./Broadcast.css"; // Importar arquivo CSS
 
 function Broadcast() {
-
   const [schedule, setSchedule] = useState(null);
   const [pages, setPages] = useState([]);
   const [accessToken, setAccessToken] = useState("");
@@ -55,6 +54,10 @@ function Broadcast() {
   const [alertMessage, setAlertMessage] = useState("");
   const [alertSeverity, setAlertSeverity] = useState("success");
   const navigate = useNavigate();
+
+  useEffect(() => {
+    fetchSettings();
+  }, []);
 
   const getToken = useCallback(() => {
     const token = localStorage.getItem("token");
@@ -81,8 +84,9 @@ function Broadcast() {
           },
         }
       );
-      const { accessToken } = response.data;
+      const { accessToken, pages } = response.data;
       setAppAccessToken(accessToken || "");
+      setPages(pages);
       return accessToken || "";
     } catch (error) {
       console.error("Error fetching settings:", error);
@@ -94,7 +98,6 @@ function Broadcast() {
   };
 
   const fetchPages = async () => {
-    console.log('dsadsa')
     let nextUrl = `https://graph.facebook.com/v20.0/${userId}/accounts?access_token=${accessToken}`;
     let allPages = [];
     try {
@@ -103,8 +106,8 @@ function Broadcast() {
       while (nextUrl) {
         const response = await axios.get(nextUrl, {
           headers: {
-            Authorization: `Bearer ${appAccessToken}`
-          }
+            Authorization: `Bearer ${appAccessToken}`,
+          },
         });
         allPages = allPages.concat(response.data.data);
         nextUrl = response.data.paging?.next || null;
@@ -120,6 +123,7 @@ function Broadcast() {
         setAlertSeverity("success");
         setOpen(true);
       }
+      setPagesUserSettings(allPages);
     } catch (error) {
       setLoading(false); // Finaliza o loading
       console.error("Error fetching pages or settings:", error);
@@ -164,7 +168,7 @@ function Broadcast() {
         url: button.url,
         title: button.title,
       })),
-      schedule : schedule,
+      schedule: schedule,
       userId: decoded.userId,
       n8n: false,
     };
@@ -174,19 +178,17 @@ function Broadcast() {
 
       setLoadingMessage("Enviando broadcast, por favor aguarde...");
       setLoading(true); // Show loading
-      await axios.post(
-        "https://webhook-messenger-67627eb7cfd0.herokuapp.com/broadcast/send",
-        data,
-        {
-          headers: {
-            "Content-Type": "application/json",
-            "app-access-token": accessToken,
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      await axios.post("https://webhook-messenger-67627eb7cfd0.herokuapp.com/broadcast/send", data, {
+        headers: {
+          "Content-Type": "application/json",
+          "app-access-token": appAccessToken,
+          Authorization: `Bearer ${token}`,
+        },
+      });
       setLoading(false); // Hide loading
-      setAlertMessage("Broadcast enviado com sucesso! Os resultados aparecerão em breve no dashboard.");
+      setAlertMessage(
+        "Broadcast enviado com sucesso! Os resultados aparecerão em breve no dashboard."
+      );
       setAlertSeverity("success");
       setOpen(true);
     } catch (error) {
@@ -213,15 +215,39 @@ function Broadcast() {
     console.log("Facebook response:", response);
     setAccessToken(response.accessToken);
     setUserId(response.userID);
+    setSelectedPages([])
     const appAccessToken = await fetchSettings();
     if (appAccessToken) {
-      fetchPages(response.userID, appAccessToken);
+      fetchPages(response.userID, appAccessToken)
     }
   };
   const addVariableInMessageBroad = (typeVariabel) => {
-    setMessage((prevMessage) => prevMessage + typeVariabel + ' ')
+    setMessage((prevMessage) => prevMessage + typeVariabel + " ");
   };
+  const setPagesUserSettings = async (allPages) => {
+    const token = getToken();
+    if (!token) return;
+    console.log(allPages, 'pages')
+    try {
+      const decoded = jwtDecode(token);
+      const userIdApp = decoded.userId;
 
+      const data = {
+        pages: allPages,
+        facebookUserId: userId,
+        accessToken: accessToken,
+      };
+      await axios.post(`https://webhook-messenger-67627eb7cfd0.herokuapp.com/api/settings`, data, {
+        headers: {
+          "Content-Type": "application/json",
+          userId:userIdApp,
+          Authorization: `Bearer ${token}`,
+        },
+      });
+    } catch (error) {
+      console.error("Erro ao salvar userSettings:", error);
+    }
+  };
   return (
     <DashboardLayout>
       <DashboardNavbar />
@@ -275,11 +301,7 @@ function Broadcast() {
                   )}
                   fullWidth
                 />
-                <MDButton
-                  variant="text"
-                  color="info"
-                  onClick={() => setSelectedPages(pages)}
-                >
+                <MDButton variant="text" color="info" onClick={() => setSelectedPages(pages)}>
                   Selecionar Todas
                 </MDButton>
                 <Typography variant="caption" color="secondary">
@@ -287,38 +309,50 @@ function Broadcast() {
                 </Typography>
               </MDBox>
               <MDBox pt={3} px={3}>
-              <LocalizationProvider dateAdapter={AdapterDayjs}>
-                <DemoContainer components={['DateTimePicker']}>
-                  <DateTimePicker
-                    className="custom-date-time-picker"
-                    label="Data e horário do agendamento"
-                    onChange={(newValue) => setSchedule(dayjs(newValue))}
-                  />
-                </DemoContainer>
-              </LocalizationProvider>
+                <LocalizationProvider dateAdapter={AdapterDayjs}>
+                  <DemoContainer components={["DateTimePicker"]}>
+                    <DateTimePicker
+                      className="custom-date-time-picker"
+                      label="Data e horário do agendamento"
+                      onChange={(newValue) => setSchedule(dayjs(newValue))}
+                    />
+                  </DemoContainer>
+                </LocalizationProvider>
               </MDBox>
               <MDBox pt={3} px={3}>
                 <MDBox>
                   <MDTypography variant="h6">
                     Adicionar váriaveis ao texto do broadCast
                   </MDTypography>
-                    <Grid container spacing={2} alignItems="center" maxWidth={1020}>
-                          <Grid item xs={2}>
-                          <MDButton variant="contained" color="success" onClick={() => addVariableInMessageBroad('{{first_name}}')}>
-                            Primeiro nome
-                          </MDButton>
-                          </Grid>
-                          <Grid item xs={2}>
-                          <MDButton variant="contained" color="success" onClick={() => addVariableInMessageBroad('{{last_name}}')}>
-                            Ultimo nome
-                          </MDButton>
-                          </Grid>
-                          <Grid item xs={2}>
-                          <MDButton variant="contained" color="success" onClick={() => addVariableInMessageBroad('{{full_name}}')}>
-                            Nome completo
-                          </MDButton>
-                        </Grid>
+                  <Grid container spacing={2} alignItems="center" maxWidth={1020}>
+                    <Grid item xs={2}>
+                      <MDButton
+                        variant="contained"
+                        color="success"
+                        onClick={() => addVariableInMessageBroad("{{first_name}}")}
+                      >
+                        Primeiro nome
+                      </MDButton>
                     </Grid>
+                    <Grid item xs={2}>
+                      <MDButton
+                        variant="contained"
+                        color="success"
+                        onClick={() => addVariableInMessageBroad("{{last_name}}")}
+                      >
+                        Ultimo nome
+                      </MDButton>
+                    </Grid>
+                    <Grid item xs={2}>
+                      <MDButton
+                        variant="contained"
+                        color="success"
+                        onClick={() => addVariableInMessageBroad("{{full_name}}")}
+                      >
+                        Nome completo
+                      </MDButton>
+                    </Grid>
+                  </Grid>
                 </MDBox>
                 <TextField
                   label="Copy do Broadcast"
@@ -385,10 +419,7 @@ function Broadcast() {
           {alertMessage}
         </Alert>
       </Snackbar>
-      <Backdrop
-        sx={{ color: "#fff", zIndex: (theme) => theme.zIndex.drawer + 1 }}
-        open={loading}
-      >
+      <Backdrop sx={{ color: "#fff", zIndex: (theme) => theme.zIndex.drawer + 1 }} open={loading}>
         <CircularProgress color="inherit" />
         <MDTypography variant="h6" color="white" sx={{ ml: 2 }}>
           {loadingMessage}
