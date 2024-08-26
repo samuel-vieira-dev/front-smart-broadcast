@@ -15,7 +15,7 @@ import Snackbar from "@mui/material/Snackbar";
 import Alert from "@mui/material/Alert";
 import Slide from "@mui/material/Slide";
 import VisibilityIcon from "@mui/icons-material/Visibility";
-import ModeEditIcon from "@mui/icons-material/ModeEdit";
+import DeleteIcon from "@mui/icons-material/Delete";
 
 // Dashboard components
 import MDButton from "components/MDButton";
@@ -91,30 +91,9 @@ function Dashboard() {
   };
   const [searchQuery, setSearchQuery] = useState("");
 
-  // const [startDate, setStartDate] = useState("");
-  // const [endDate, setEndDate] = useState("");
-
-  // const handleSearch = () => {
-  //   // onSearch(searchQuery);
-  // };
-
-  // const handleFilter = () => {
-  //   // onFilter(startDate, endDate);
-  // };
-
   return (
     <DashboardLayout>
       <DashboardNavbar />
-      {/* <MDBox
-        display="flex"
-        justifyContent="center"
-        alignItems="center"
-        height="80vh" // Ajuste conforme necessário para centralizar verticalmente
-      >
-        <MDTypography variant="h4" color="text">
-          Em breve...
-        </MDTypography>
-      </MDBox> */}
       <MDBox pt={6} pb={3}>
         <Grid container spacing={6}>
           <Grid item xs={12}>
@@ -173,10 +152,10 @@ function Dashboard() {
                       >
                         <MDBox style={{ flex: 1 }}>
                           <MDTypography variant="subtitle2" style={{ flex: 1 }}>
-                            Id Broad
+                            Nome do broadcast
                           </MDTypography>
                           <MDTypography variant="h6" style={{ flex: 1 }}>
-                            {item._id}
+                            {item.nameBroad || "Sem nome"}
                           </MDTypography>
                         </MDBox>
                         <MDBox variant="h6" style={{ flex: 1 }}>
@@ -193,7 +172,7 @@ function Dashboard() {
                           </MDTypography>
                           <MDBox style={{ paddingTop: "10px" }}>
                             <VisibilityIcon style={{ marginRight: "20px" }}></VisibilityIcon>
-                            <ModeEditIcon></ModeEditIcon>
+                            <DeleteIcon></DeleteIcon>
                           </MDBox>
                         </MDBox>
                       </MDBox>
@@ -210,7 +189,7 @@ function Dashboard() {
         autoHideDuration={5000}
         onClose={handleClose}
         TransitionComponent={TransitionUp}
-        anchorOrigin={{ vertical: "center", horizontal: "center" }}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
       >
         <Alert onClose={handleClose} severity={alertSeverity}>
           {alertMessage}

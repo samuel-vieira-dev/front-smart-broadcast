@@ -16,7 +16,7 @@ import Backdrop from "@mui/material/Backdrop";
 import CircularProgress from "@mui/material/CircularProgress";
 
 // @mui material date components
-import dayjs, { Dayjs } from "dayjs";
+import dayjs from "dayjs";
 import { DemoContainer } from "@mui/x-date-pickers/internals/demo";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
@@ -37,13 +37,17 @@ import axios from "axios";
 import FacebookLogin from "react-facebook-login";
 import { jwtDecode } from "jwt-decode"; // Não mexa aqui. De preferência use aspas duplas nessa página.
 
+// dark theme
+import { useMaterialUIController } from "context";
+import themeDarkRTL from "../../assets/theme-dark/theme-rtl";
+import { ThemeProvider } from "@mui/material/styles";
+import themeRTL from "../../assets/theme/theme-rtl";
+
 import "./Broadcast.css"; // Importar arquivo CSS
 
 function Broadcast() {
   const [schedule, setSchedule] = useState(null);
   const [pages, setPages] = useState([]);
-  const [accessToken, setAccessToken] = useState("");
-  const [userId, setUserId] = useState("");
   const [appAccessToken, setAppAccessToken] = useState("");
   const [selectedPages, setSelectedPages] = useState([]);
   const [message, setMessage] = useState("");
@@ -53,6 +57,9 @@ function Broadcast() {
   const [open, setOpen] = useState(false);
   const [alertMessage, setAlertMessage] = useState("");
   const [alertSeverity, setAlertSeverity] = useState("success");
+  const [nameBroad, setNameBroad] = useState("");
+  const [controller] = useMaterialUIController();
+  const { darkMode } = controller;
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -97,18 +104,14 @@ function Broadcast() {
     }
   };
 
-  const fetchPages = async () => {
+  const fetchPages = async (userId, accessToken) => {
     let nextUrl = `https://graph.facebook.com/v20.0/${userId}/accounts?access_token=${accessToken}`;
     let allPages = [];
     try {
       setLoadingMessage("Buscando páginas, por favor aguarde...");
       setLoading(true); // Inicia o loading
       while (nextUrl) {
-        const response = await axios.get(nextUrl, {
-          headers: {
-            Authorization: `Bearer ${appAccessToken}`,
-          },
-        });
+        const response = await axios.get(nextUrl, {});
         allPages = allPages.concat(response.data.data);
         nextUrl = response.data.paging?.next || null;
       }
@@ -123,17 +126,13 @@ function Broadcast() {
         setAlertSeverity("success");
         setOpen(true);
       }
-      setPagesUserSettings(allPages);
+      setPagesUserSettings(allPages, userId, accessToken);
     } catch (error) {
       setLoading(false); // Finaliza o loading
       console.error("Error fetching pages or settings:", error);
       setAlertMessage("Erro ao carregar informações.");
       setAlertSeverity("error");
       setOpen(true);
-      if (error.response && error.response.status === 401) {
-        localStorage.removeItem("token");
-        navigate("/authentication/sign-in");
-      }
     }
   };
 
@@ -158,16 +157,13 @@ function Broadcast() {
   const handleSubmit = async () => {
     const token = getToken();
     if (!token) return;
-
+    const verifyButtons = await verifyButtonss(buttons);
     const decoded = jwtDecode(token);
     const data = {
       pageids: selectedPages.map((page) => page.id),
+      nameBroad: nameBroad,
       message: message,
-      buttons: buttons.map((button) => ({
-        type: "web_url",
-        url: button.url,
-        title: button.title,
-      })),
+      buttons: verifyButtons,
       schedule: schedule,
       userId: decoded.userId,
       n8n: false,
@@ -178,13 +174,17 @@ function Broadcast() {
 
       setLoadingMessage("Enviando broadcast, por favor aguarde...");
       setLoading(true); // Show loading
-      await axios.post("https://webhook-messenger-67627eb7cfd0.herokuapp.com/broadcast/send", data, {
-        headers: {
-          "Content-Type": "application/json",
-          "app-access-token": appAccessToken,
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      await axios.post(
+        "https://webhook-messenger-67627eb7cfd0.herokuapp.com/broadcast/send",
+        data,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            "app-access-token": appAccessToken,
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
       setLoading(false); // Hide loading
       setAlertMessage(
         "Broadcast enviado com sucesso! Os resultados aparecerão em breve no dashboard."
@@ -200,6 +200,17 @@ function Broadcast() {
     }
   };
 
+  const verifyButtonss = async (buttons) => {
+    if (!buttons[0].title || !buttons[0].url) {
+      return [];
+    } else {
+      return buttons.map((button) => ({
+        type: "web_url",
+        url: button.url,
+        title: button.title,
+      }));
+    }
+  };
   const handleClose = (event, reason) => {
     if (reason === "clickaway") {
       return;
@@ -213,21 +224,18 @@ function Broadcast() {
 
   const responseFacebook = async (response) => {
     console.log("Facebook response:", response);
-    setAccessToken(response.accessToken);
-    setUserId(response.userID);
-    setSelectedPages([])
+    setSelectedPages([]);
     const appAccessToken = await fetchSettings();
     if (appAccessToken) {
-      fetchPages(response.userID, appAccessToken)
+      fetchPages(response.userID, response.accessToken);
     }
   };
   const addVariableInMessageBroad = (typeVariabel) => {
     setMessage((prevMessage) => prevMessage + typeVariabel + " ");
   };
-  const setPagesUserSettings = async (allPages) => {
+  const setPagesUserSettings = async (allPages, userId, accessToken) => {
     const token = getToken();
     if (!token) return;
-    console.log(allPages, 'pages')
     try {
       const decoded = jwtDecode(token);
       const userIdApp = decoded.userId;
@@ -240,7 +248,7 @@ function Broadcast() {
       await axios.post(`https://webhook-messenger-67627eb7cfd0.herokuapp.com/api/settings`, data, {
         headers: {
           "Content-Type": "application/json",
-          userId:userIdApp,
+          userId: userIdApp,
           Authorization: `Bearer ${token}`,
         },
       });
@@ -309,16 +317,31 @@ function Broadcast() {
                 </Typography>
               </MDBox>
               <MDBox pt={3} px={3}>
-                <LocalizationProvider dateAdapter={AdapterDayjs}>
-                  <DemoContainer components={["DateTimePicker"]}>
-                    <DateTimePicker
-                      className="custom-date-time-picker"
-                      label="Data e horário do agendamento"
-                      onChange={(newValue) => setSchedule(dayjs(newValue))}
-                    />
-                  </DemoContainer>
-                </LocalizationProvider>
+                <Grid item xs={12} pb={2}>
+                  <TextField
+                    label="Nome do broadcast"
+                    variant="outlined"
+                    fullWidth
+                    value={nameBroad}
+                    placeholder="Digite o nome do seu broadcast"
+                    onChange={(e) => setNameBroad(e.target.value)}
+                  />
+                </Grid>
+                <Grid maxWidth={560}>
+                  <ThemeProvider theme={darkMode ? themeDarkRTL : themeRTL}>
+                    <LocalizationProvider dateAdapter={AdapterDayjs}>
+                      <DemoContainer components={["DateTimePicker"]}>
+                        <DateTimePicker
+                          className="custom-date-time-picker"
+                          label="Data e horário do agendamento"
+                          onChange={(newValue) => setSchedule(dayjs(newValue))}
+                        />
+                      </DemoContainer>
+                    </LocalizationProvider>
+                  </ThemeProvider>
+                </Grid>
               </MDBox>
+
               <MDBox pt={3} px={3}>
                 <MDBox>
                   <MDTypography variant="h6">
@@ -413,7 +436,7 @@ function Broadcast() {
         autoHideDuration={5000}
         onClose={handleClose}
         TransitionComponent={TransitionUp}
-        anchorOrigin={{ vertical: "center", horizontal: "center" }}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
       >
         <Alert onClose={handleClose} severity={alertSeverity}>
           {alertMessage}
