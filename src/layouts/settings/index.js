@@ -237,7 +237,7 @@ const Settings = () => {
         autoHideDuration={3000}
         onClose={handleClose}
         TransitionComponent={TransitionUp}
-        anchorOrigin={{ vertical: "center", horizontal: "center" }}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
       >
         <Alert
           onClose={handleClose}
