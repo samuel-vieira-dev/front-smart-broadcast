@@ -97,6 +97,8 @@ const Settings = () => {
     const token = getToken();
     if (!token) return;
 
+    const decoded = jwtDecode(token);
+    const userId = decoded.userId;
     const data = {
       verifyToken,
       appAccessToken,
@@ -104,6 +106,7 @@ const Settings = () => {
       clientSecret,
       callbackUrl,
       responseText,
+      userId,
     };
 
     try {
@@ -176,7 +179,7 @@ const Settings = () => {
                         variant="outlined"
                         fullWidth
                         value={appAccessToken}
-                        placeholder="Digite o App Access Token"
+                        placeholder="Digite o DM Access Token"
                         onChange={(e) => setAppAccessToken(e.target.value)}
                       />
                     </Grid>

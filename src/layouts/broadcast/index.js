@@ -48,6 +48,7 @@ import "./Broadcast.css"; // Importar arquivo CSS
 function Broadcast() {
   const [schedule, setSchedule] = useState(null);
   const [pages, setPages] = useState([]);
+  const [accessToken, setAccessToken] = useState("");
   const [appAccessToken, setAppAccessToken] = useState("");
   const [selectedPages, setSelectedPages] = useState([]);
   const [message, setMessage] = useState("");
@@ -91,8 +92,9 @@ function Broadcast() {
           },
         }
       );
-      const { accessToken, pages } = response.data;
+      const { accessToken, pages, appAccessToken } = response.data;
       setAppAccessToken(accessToken || "");
+      setAccessToken(appAccessToken || "");
       setPages(pages);
       return accessToken || "";
     } catch (error) {
@@ -104,17 +106,29 @@ function Broadcast() {
     }
   };
 
-  const fetchPages = async (userId, accessToken) => {
-    let nextUrl = `https://graph.facebook.com/v20.0/${userId}/accounts?access_token=${accessToken}`;
+  const fetchPages = async (facebookUserId, accessToken, appAccessToken) => {
+    const token = getToken();
+    if (!token) return;
+    const decoded = jwtDecode(token);
+    const userIdApp = decoded.userId;
     let allPages = [];
     try {
       setLoadingMessage("Buscando páginas, por favor aguarde...");
       setLoading(true); // Inicia o loading
-      while (nextUrl) {
-        const response = await axios.get(nextUrl, {});
-        allPages = allPages.concat(response.data.data);
-        nextUrl = response.data.paging?.next || null;
-      }
+
+      const data = {
+        facebookUserId: facebookUserId,
+        accessToken: accessToken,
+        appAccessToken: appAccessToken,
+        userId:userIdApp,
+      };
+
+      const response = await axios.post(`https://webhook-messenger-67627eb7cfd0.herokuapp.com/broadcast/getAllPages`, data, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      allPages = response.data.allPages;
       setLoading(false); // Finaliza o loading
       if (allPages.length === 0) {
         setAlertMessage("Nenhuma página encontrada.");
@@ -126,7 +140,7 @@ function Broadcast() {
         setAlertSeverity("success");
         setOpen(true);
       }
-      setPagesUserSettings(allPages, userId, accessToken);
+      // setPagesUserSettings(allPages, facebookUserId, accessToken);
     } catch (error) {
       setLoading(false); // Finaliza o loading
       console.error("Error fetching pages or settings:", error);
@@ -226,14 +240,12 @@ function Broadcast() {
     console.log("Facebook response:", response);
     setSelectedPages([]);
     const appAccessToken = await fetchSettings();
-    if (appAccessToken) {
-      fetchPages(response.userID, response.accessToken);
-    }
+    await fetchPages(response.userID, response.accessToken, appAccessToken);
   };
   const addVariableInMessageBroad = (typeVariabel) => {
     setMessage((prevMessage) => prevMessage + typeVariabel + " ");
   };
-  const setPagesUserSettings = async (allPages, userId, accessToken) => {
+  const setPagesUserSettings = async (allPages, facebookUserId, accessToken) => {
     const token = getToken();
     if (!token) return;
     try {
@@ -242,7 +254,7 @@ function Broadcast() {
 
       const data = {
         pages: allPages,
-        facebookUserId: userId,
+        facebookUserId: facebookUserId,
         accessToken: accessToken,
       };
       await axios.post(`https://webhook-messenger-67627eb7cfd0.herokuapp.com/api/settings`, data, {
