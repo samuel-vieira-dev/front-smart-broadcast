@@ -96,7 +96,7 @@ function Broadcast() {
       setAppAccessToken(accessToken || "");
       setAccessToken(appAccessToken || "");
       setPages(pages);
-      return accessToken || "";
+      return appAccessToken || "";
     } catch (error) {
       console.error("Error fetching settings:", error);
       setAlertMessage("Erro ao carregar configurações.");
