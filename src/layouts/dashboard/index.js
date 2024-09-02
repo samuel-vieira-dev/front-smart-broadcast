@@ -43,6 +43,10 @@ function Dashboard() {
   const [alertMessage, setAlertMessage] = useState("");
   const [open, setOpen] = useState(false);
   const [alertSeverity, setAlertSeverity] = useState("success");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [startDate, setStartDate] = useState(null);
+  const [endDate, setEndDate] = useState(null);
+
   const navigate = useNavigate();
 
   const getToken = useCallback(() => {
@@ -89,7 +93,36 @@ function Dashboard() {
   const TransitionUp = (props) => {
     return <Slide {...props} direction="up" />;
   };
-  const [searchQuery, setSearchQuery] = useState("");
+  const filterNameBroadcast = async () => {
+    const token = getToken();
+    if (!token) return;
+
+    try {
+      const decoded = jwtDecode(token);
+      const userId = decoded.userId;
+
+      const queryParams = new URLSearchParams();
+      if (searchQuery) queryParams.append("name", searchQuery);
+      if (startDate) queryParams.append("startDate", startDate.toISOString());
+      if (endDate) queryParams.append("endDate", endDate.toISOString());
+
+      const response = await axios.get(
+        `https://webhook-messenger-67627eb7cfd0.herokuapp.com/broadcast/filter/${userId}?${queryParams.toString()}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      setDadosBroad(response.data);
+    } catch (error) {
+      console.error("Erro ao pegar nomes do broadcast:", error);
+      setAlertMessage("Erro ao pegar nomes do broadcast. Por favor, tente novamente.");
+      setAlertSeverity("error");
+      setOpen(true);
+    }
+  };
 
   return (
     <DashboardLayout>
@@ -99,7 +132,7 @@ function Dashboard() {
           <Grid item xs={12}>
             <Card>
               <MDBox pt={6} mx={2} py={3} px={2}>
-                <MDTypography variant="h3">Detalhes dos envios de broad</MDTypography>
+                <MDTypography variant="h3">Detalhes dos envios de broadcast</MDTypography>
               </MDBox>
               <MDBox pt={4} px={4} pb={3}>
                 <ThemeProvider theme={darkMode ? darkTheme : themeRTL}>
@@ -109,6 +142,7 @@ function Dashboard() {
                       fontWeight: "bold",
                       paddingBottom: "20px",
                       borderBottom: "4px solid white",
+                      flexWrap: "wrap",
                     }}
                   >
                     <TextField
@@ -118,65 +152,89 @@ function Dashboard() {
                       onChange={(e) => setSearchQuery(e.target.value)}
                       style={{ marginRight: "20px", flexGrow: 1 }}
                     />
-                    <MDBox
-                      style={{
-                        display: "flex",
-                        padding: 0,
-                        gap: "4px",
-                      }}
-                    >
+                    <MDBox style={{ display: "flex", padding: 0, gap: "4px", flexWrap: "wrap" }}>
                       <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="pt-br">
-                        <DatePicker label="Data incial" />
+                        <DatePicker
+                          label="Data inicial"
+                          value={startDate}
+                          onChange={(newValue) => setStartDate(newValue)}
+                          renderInput={(params) => <TextField {...params} />}
+                        />
                       </LocalizationProvider>
                       <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="pt-br">
-                        <DatePicker label="Data final" />
+                        <DatePicker
+                          label="Data final"
+                          value={endDate}
+                          onChange={(newValue) => setEndDate(newValue)}
+                          renderInput={(params) => <TextField {...params} />}
+                        />
                       </LocalizationProvider>
                     </MDBox>
                     <MDBox ml="8px">
-                      <MDButton variant="gradient" color={sidenavColor} fullWidth>
+                      <MDButton
+                        variant="gradient"
+                        color={sidenavColor}
+                        fullWidth
+                        onClick={filterNameBroadcast}
+                      >
                         Buscar
                       </MDButton>
                     </MDBox>
                   </MDBox>
                   <MDBox style={{ backgroundColor: "#f0f0f0", borderRadius: "5px" }}>
-                    {dadosBroad?.map((item) => (
-                      <MDBox
-                        key={item._id}
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          padding: "20px",
-                          borderBottom: "8px solid white",
-                          gap: "10px",
-                        }}
-                      >
-                        <MDBox style={{ flex: 1 }}>
-                          <MDTypography variant="subtitle2" style={{ flex: 1 }}>
-                            Nome do broadcast
-                          </MDTypography>
-                          <MDTypography variant="h6" style={{ flex: 1 }}>
-                            {item.nameBroad || "Sem nome"}
-                          </MDTypography>
-                        </MDBox>
-                        <MDBox variant="h6" style={{ flex: 1 }}>
-                          <MDTypography variant="subtitle2" style={{ flex: 1 }}>
-                            Data do Agendamento
-                          </MDTypography>
-                          <MDTypography variant="h6" style={{ flex: 1 }}>
-                            {item.scheduledAt || "Não agendado"}
-                          </MDTypography>
-                        </MDBox>
-                        <MDBox style={{ flex: 1 }}>
-                          <MDTypography variant="subtitle2" style={{ flex: 1 }}>
-                            Ações
-                          </MDTypography>
-                          <MDBox style={{ paddingTop: "10px" }}>
-                            <VisibilityIcon style={{ marginRight: "20px" }}></VisibilityIcon>
-                            <DeleteIcon></DeleteIcon>
+                    {dadosBroad && dadosBroad.length > 0 ? (
+                      dadosBroad.map((item) => (
+                        <MDBox
+                          key={item._id}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            padding: "20px",
+                            borderBottom: "8px solid white",
+                            gap: "10px",
+                            flexWrap: "wrap",
+                          }}
+                        >
+                          <MDBox style={{ flex: 1 }}>
+                            <MDTypography variant="subtitle2">Nome do broadcast</MDTypography>
+                            <MDTypography variant="h6">{item.nameBroad || "Sem nome"}</MDTypography>
+                          </MDBox>
+                          <MDBox style={{ flex: 1 }}>
+                            <MDTypography variant="subtitle2">Data do Agendamento</MDTypography>
+                            <MDTypography variant="h6">
+                              {item.scheduledAt || "Não agendado"}
+                            </MDTypography>
+                          </MDBox>
+                          <MDBox style={{ flex: 1 }}>
+                            <MDTypography variant="subtitle2">Total Leads</MDTypography>
+                            <MDTypography variant="h6">{item.send || 0}</MDTypography>
+                          </MDBox>
+                          <MDBox style={{ flex: 1 }}>
+                            <MDTypography variant="subtitle2">Leads entregues</MDTypography>
+                            <MDTypography variant="h6" style={{ color: "green" }}>
+                              {item.delivered || 0}
+                            </MDTypography>
+                          </MDBox>
+                          <MDBox style={{ flex: 1 }}>
+                            <MDTypography variant="subtitle2">Leads não entregue</MDTypography>
+                            <MDTypography variant="h6" style={{ color: "red" }}>
+                              {item.notDelivered || 0}
+                            </MDTypography>
+                          </MDBox>
+                          <MDBox style={{ flex: 1 }}>
+                            <MDTypography variant="subtitle2">Ações</MDTypography>
+                            <MDBox style={{ paddingTop: "10px" }}>
+                              <VisibilityIcon style={{ marginRight: "20px" }} />
+                              <DeleteIcon />
+                            </MDBox>
                           </MDBox>
                         </MDBox>
+                      ))
+                    ) : (
+                      <MDBox style={{ padding: "20px", textAlign: "center" }}>
+                        <MDTypography variant="h6">Nenhum broadcast foi encontrado</MDTypography>
                       </MDBox>
-                    ))}
+                    )}
                   </MDBox>
                 </ThemeProvider>
               </MDBox>
@@ -195,7 +253,11 @@ function Dashboard() {
           {alertMessage}
         </Alert>
       </Snackbar>
-      {/* <MDBox py={3}>
+    </DashboardLayout>
+  );
+}
+{
+  /* <MDBox py={3}>
         <Grid container spacing={3}>
           <Grid item xs={12} md={6} lg={3}>
             <MDBox mb={1.5}>
@@ -308,9 +370,7 @@ function Dashboard() {
             </Grid>
           </Grid>
         </MDBox>
-      </MDBox> */}
-    </DashboardLayout>
-  );
+      </MDBox> */
 }
-
+// </DashboardLayout>
 export default Dashboard;

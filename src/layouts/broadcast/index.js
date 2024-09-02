@@ -245,29 +245,7 @@ function Broadcast() {
   const addVariableInMessageBroad = (typeVariabel) => {
     setMessage((prevMessage) => prevMessage + typeVariabel + " ");
   };
-  const setPagesUserSettings = async (allPages, facebookUserId, accessToken) => {
-    const token = getToken();
-    if (!token) return;
-    try {
-      const decoded = jwtDecode(token);
-      const userIdApp = decoded.userId;
 
-      const data = {
-        pages: allPages,
-        facebookUserId: facebookUserId,
-        accessToken: accessToken,
-      };
-      await axios.post(`https://webhook-messenger-67627eb7cfd0.herokuapp.com/api/settings`, data, {
-        headers: {
-          "Content-Type": "application/json",
-          userId: userIdApp,
-          Authorization: `Bearer ${token}`,
-        },
-      });
-    } catch (error) {
-      console.error("Erro ao salvar userSettings:", error);
-    }
-  };
   return (
     <DashboardLayout>
       <DashboardNavbar />
