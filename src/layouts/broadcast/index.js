@@ -105,12 +105,58 @@ function Broadcast() {
       return null;
     }
   };
+  const checkStatus = async () => {
+    const token = getToken();
+    if (!token) return;
+    const decoded = jwtDecode(token);
+    const userId = decoded.userId;
+    try {
+      const response = await axios.get(
+        `https://webhook-messenger-67627eb7cfd0.herokuapp.com/api/settings/${userId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      if (response.data.status === 0) {
+        setPages(response.data.pages);
+        return response.data.pages;
+      } else if (response.data.status === 1) {
+        return false;
+      } else if (response.data.status === 2) {
+        console.error("Status é 2, disparando erro e parando a verificação.");
+        return 2;
+      }
+    } catch (error) {
+      console.error("Erro ao verificar o status:", error);
+      return false;
+    }
+  };
 
+  const waitForStatus = () => {
+    return new Promise((resolve, reject) => {
+      const intervalId = setInterval(async () => {
+        const pages = await checkStatus();
+        if (pages === 2) {
+          setLoading(false);
+          setAlertMessage("Erro ao carregar informações.");
+          setAlertSeverity("error");
+          clearInterval(intervalId);
+          reject();
+        }
+        if (pages) {
+          clearInterval(intervalId);
+          resolve(pages);
+        }
+      }, 10000);
+    });
+  };
   const fetchPages = async (facebookUserId, accessToken, appAccessToken) => {
     const token = getToken();
     if (!token) return;
     const decoded = jwtDecode(token);
-    const userIdApp = decoded.userId;
+    const userId = decoded.userId;
     let allPages = [];
     try {
       setLoadingMessage("Buscando páginas, por favor aguarde...");
@@ -120,15 +166,20 @@ function Broadcast() {
         facebookUserId: facebookUserId,
         accessToken: accessToken,
         appAccessToken: appAccessToken,
-        userId:userIdApp,
+        userId: userId,
       };
 
-      const response = await axios.post(`https://webhook-messenger-67627eb7cfd0.herokuapp.com/broadcast/getAllPages`, data, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      allPages = response.data.allPages;
+      await axios.post(
+        `https://webhook-messenger-67627eb7cfd0.herokuapp.com/broadcast/getAllPages`,
+        data,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      const allPagesRequest = await waitForStatus();
+      allPages = allPagesRequest;
       setLoading(false); // Finaliza o loading
       if (allPages.length === 0) {
         setAlertMessage("Nenhuma página encontrada.");
@@ -140,7 +191,6 @@ function Broadcast() {
         setAlertSeverity("success");
         setOpen(true);
       }
-      // setPagesUserSettings(allPages, facebookUserId, accessToken);
     } catch (error) {
       setLoading(false); // Finaliza o loading
       console.error("Error fetching pages or settings:", error);
@@ -188,17 +238,13 @@ function Broadcast() {
 
       setLoadingMessage("Enviando broadcast, por favor aguarde...");
       setLoading(true); // Show loading
-      await axios.post(
-        "https://webhook-messenger-67627eb7cfd0.herokuapp.com/broadcast/send",
-        data,
-        {
-          headers: {
-            "Content-Type": "application/json",
-            "app-access-token": appAccessToken,
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      await axios.post("https://webhook-messenger-67627eb7cfd0.herokuapp.com/broadcast/send", data, {
+        headers: {
+          "Content-Type": "application/json",
+          "app-access-token": appAccessToken,
+          Authorization: `Bearer ${token}`,
+        },
+      });
       setLoading(false); // Hide loading
       setAlertMessage(
         "Broadcast enviado com sucesso! Os resultados aparecerão em breve no dashboard."
