@@ -152,34 +152,67 @@ function Broadcast() {
       }, 10000);
     });
   };
+  const fetchPagesWithToken = async (userId, token) => {
+    console.log("entrou no fetchPagesWithToken");
+    let pages = [];
+    let pagesUrl = `https://graph.facebook.com/v20.0/${userId}/accounts?access_token=${token}`;
+
+    console.log("Começou o While");
+
+    const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+    while (pagesUrl) {
+      console.log(`pagesUrl: ${pagesUrl}`);
+
+      try {
+        const response = await axios.get(pagesUrl, {});
+        pages = pages.concat(response.data.data);
+        pagesUrl = response.data.paging?.next || null;
+
+        if (pagesUrl) {
+          console.log("Aguardando 5 segundos antes da próxima requisição...");
+          await delay(5000);
+        }
+      } catch (error) {
+        console.error("Erro ao buscar páginas:", error);
+        return pages;
+      }
+    }
+
+    console.log("Finalizou o While");
+    return pages;
+  };
   const fetchPages = async (facebookUserId, accessToken, appAccessToken) => {
     const token = getToken();
     if (!token) return;
     const decoded = jwtDecode(token);
     const userId = decoded.userId;
     let allPages = [];
+    let pagesWithAccessToken = [];
+    let pagesWithAppAccessToken = [];
+
     try {
       setLoadingMessage("Buscando páginas, por favor aguarde...");
       setLoading(true); // Inicia o loading
+      if (appAccessToken) {
+        console.log('if')
 
-      const data = {
-        facebookUserId: facebookUserId,
-        accessToken: accessToken,
-        appAccessToken: appAccessToken,
-        userId: userId,
-      };
+        pagesWithAccessToken = await fetchPagesWithToken(facebookUserId, appAccessToken);
+      } else {
+        console.log('else')
 
-      await axios.post(
-        `https://webhook-messenger-67627eb7cfd0.herokuapp.com/broadcast/getAllPages`,
-        data,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
+        pagesWithAppAccessToken = await fetchPagesWithToken(facebookUserId, accessToken);
+      }
+
+      console.log(pagesWithAccessToken, "pagesWithAccessToken");
+      console.log(pagesWithAppAccessToken, "pagesWithAppAccessToken");
+
+      const pages = [...pagesWithAccessToken, ...pagesWithAppAccessToken];
+
+      allPages = pages.filter(
+        (page, index, self) => index === self.findIndex((p) => p.id === page.id)
       );
-      const allPagesRequest = await waitForStatus();
-      allPages = allPagesRequest;
+      console.log(allPages, "allpages");
       setLoading(false); // Finaliza o loading
       if (allPages.length === 0) {
         setAlertMessage("Nenhuma página encontrada.");
@@ -191,6 +224,7 @@ function Broadcast() {
         setAlertSeverity("success");
         setOpen(true);
       }
+      setPagesUserSettings(allPages, facebookUserId, accessToken, appAccessToken);
     } catch (error) {
       setLoading(false); // Finaliza o loading
       console.error("Error fetching pages or settings:", error);
@@ -199,7 +233,30 @@ function Broadcast() {
       setOpen(true);
     }
   };
+  const setPagesUserSettings = async (allPages, facebookUserId, accessToken, appAccessToken) => {
+    const token = getToken();
+    if (!token) return;
+    try {
+      const decoded = jwtDecode(token);
+      const userIdApp = decoded.userId;
 
+      const data = {
+        pages: allPages,
+        facebookUserId: facebookUserId,
+        accessToken: accessToken,
+        userId: userIdApp,
+        appAccessToken: appAccessToken,
+      };
+      await axios.post(`http://localhost:3030/api/settings`, data, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+    } catch (error) {
+      console.error("Erro ao salvar userSettings:", error);
+    }
+  };
   const handlePageChange = (event, value) => {
     setSelectedPages(value);
   };
@@ -238,13 +295,17 @@ function Broadcast() {
 
       setLoadingMessage("Enviando broadcast, por favor aguarde...");
       setLoading(true); // Show loading
-      await axios.post("https://webhook-messenger-67627eb7cfd0.herokuapp.com/broadcast/send", data, {
-        headers: {
-          "Content-Type": "application/json",
-          "app-access-token": appAccessToken,
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      await axios.post(
+        "https://webhook-messenger-67627eb7cfd0.herokuapp.com/broadcast/send",
+        data,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            "app-access-token": appAccessToken,
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
       setLoading(false); // Hide loading
       setAlertMessage(
         "Broadcast enviado com sucesso! Os resultados aparecerão em breve no dashboard."
