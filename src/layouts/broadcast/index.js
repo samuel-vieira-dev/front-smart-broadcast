@@ -247,7 +247,7 @@ function Broadcast() {
         userId: userIdApp,
         appAccessToken: appAccessToken,
       };
-      await axios.post(`http://localhost:3030/api/settings`, data, {
+      await axios.post(`https://webhook-messenger-67627eb7cfd0.herokuapp.com/api/settings`, data, {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
