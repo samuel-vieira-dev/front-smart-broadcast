@@ -194,6 +194,20 @@ function Broadcast() {
     try {
       setLoadingMessage("Buscando páginas, por favor aguarde...");
       setLoading(true); // Inicia o loading
+      // const data = {
+      //   facebookUserId: facebookUserId, 
+      //   appAccessToken: appAccessToken,
+      //   accessToken: accessToken,
+      //   userId:userId
+      // };
+      // await axios.post(`http://localhost:3030/broadcast/getAllPages`, data, {
+      //   headers: {
+      //     "Content-Type": "application/json",
+      //     Authorization: `Bearer ${token}`,
+      //   },
+      // }
+      // )
+
       if (appAccessToken) {
         console.log('if')
 
@@ -296,7 +310,7 @@ function Broadcast() {
       setLoadingMessage("Enviando broadcast, por favor aguarde...");
       setLoading(true); // Show loading
       await axios.post(
-        "https://webhook-messenger-67627eb7cfd0.herokuapp.com/broadcast/send",
+        "http://localhost:3030/broadcast/send",
         data,
         {
           headers: {
