@@ -13,4 +13,20 @@ const login = async (email, password) => {
   }
 };
 
-export { login };
+const register = async (name, email, password) => {
+  try {
+    const response = await axios.post(
+      `https://webhook-messenger-67627eb7cfd0.herokuapp.com/api/register`,
+      {
+        name,
+        email,
+        password,
+      }
+    );
+    return response.data;
+  } catch (error) {
+    throw error.response.data;
+  }
+};
+
+export { login, register };
