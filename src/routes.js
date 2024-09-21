@@ -15,6 +15,7 @@ import SignUp from "layouts/authentication/sign-up";
 
 // @mui icons
 import Icon from "@mui/material/Icon";
+import Register from "layouts/authentication/register";
 
 // Component to protect routes
 const PrivateRoute = ({ children }) => {
@@ -111,6 +112,15 @@ const routes = [
     icon: <Icon fontSize="small">assignment</Icon>,
     route: "/authentication/sign-up",
     component: <SignUp />,
+    display: false,
+  },
+  {
+    type: "collapse",
+    name: "Register",
+    key: "register",
+    icon: <Icon fontSize="small">assignment</Icon>,
+    route: "/authentication/register",
+    component: <Register />,
     display: false,
   },
 ];

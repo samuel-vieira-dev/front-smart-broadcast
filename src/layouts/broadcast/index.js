@@ -44,6 +44,7 @@ import { ThemeProvider } from "@mui/material/styles";
 import themeRTL from "../../assets/theme/theme-rtl";
 
 import "./Broadcast.css"; // Importar arquivo CSS
+import Swal from "sweetalert2";
 
 function Broadcast() {
   const [schedule, setSchedule] = useState(null);
@@ -51,6 +52,9 @@ function Broadcast() {
   const [accessToken, setAccessToken] = useState("");
   const [appAccessToken, setAppAccessToken] = useState("");
   const [selectedPages, setSelectedPages] = useState([]);
+  const [firstBroad, setFirstBroad] = useState(false);
+  const [status, setStatus] = useState(false);
+  const [userId, setuserId] = useState(false);
   const [message, setMessage] = useState("");
   const [buttons, setButtons] = useState([{ title: "", url: "" }]);
   const [loading, setLoading] = useState(false);
@@ -92,10 +96,13 @@ function Broadcast() {
           },
         }
       );
-      const { accessToken, pages, appAccessToken } = response.data;
+      const { accessToken, pages, appAccessToken, firstBroad, status, _id } = response.data;
       setAppAccessToken(accessToken || "");
       setAccessToken(appAccessToken || "");
       setPages(pages);
+      setFirstBroad(firstBroad);
+      setStatus(status);
+      setuserId(_id)
       return appAccessToken || "";
     } catch (error) {
       console.error("Error fetching settings:", error);
@@ -185,22 +192,16 @@ function Broadcast() {
   const fetchPages = async (facebookUserId, accessToken, appAccessToken) => {
     const token = getToken();
     if (!token) return;
-    const decoded = jwtDecode(token);
-    const userId = decoded.userId;
     let allPages = [];
     let pagesWithAccessToken = [];
     let pagesWithAppAccessToken = [];
 
     try {
       setLoadingMessage("Buscando páginas, por favor aguarde...");
-      setLoading(true); // Inicia o loading
+      setLoading(true);
       if (appAccessToken) {
-        console.log('if')
-
         pagesWithAccessToken = await fetchPagesWithToken(facebookUserId, appAccessToken);
       } else {
-        console.log('else')
-
         pagesWithAppAccessToken = await fetchPagesWithToken(facebookUserId, accessToken);
       }
 
@@ -213,7 +214,7 @@ function Broadcast() {
         (page, index, self) => index === self.findIndex((p) => p.id === page.id)
       );
       console.log(allPages, "allpages");
-      setLoading(false); // Finaliza o loading
+      setLoading(false);
       if (allPages.length === 0) {
         setAlertMessage("Nenhuma página encontrada.");
         setAlertSeverity("info");
@@ -276,51 +277,76 @@ function Broadcast() {
     setButtons(newButtons);
   };
   const handleSubmit = async () => {
-    const token = getToken();
-    if (!token) return;
-    const verifyButtons = await verifyButtonss(buttons);
-    const decoded = jwtDecode(token);
-    const data = {
-      pageids: selectedPages.map((page) => page.id),
-      nameBroad: nameBroad,
-      message: message,
-      buttons: verifyButtons,
-      schedule: schedule,
-      userId: decoded.userId,
-      n8n: false,
-    };
-    try {
+    if (firstBroad || status == "ACTIVE") {
       const token = getToken();
       if (!token) return;
+      const verifyButtons = await verifyButtonss(buttons);
+      const decoded = jwtDecode(token);
+      const data = {
+        pageids: selectedPages.map((page) => page.id),
+        nameBroad: nameBroad,
+        message: message,
+        buttons: verifyButtons,
+        schedule: schedule,
+        userId: decoded.userId,
+        n8n: false,
+        firstBroad:firstBroad,
+        status:status
+      };
+      try {
+        const token = getToken();
+        if (!token) return;
 
-      setLoadingMessage("Enviando broadcast, por favor aguarde...");
-      setLoading(true); // Show loading
-      await axios.post(
-        "https://webhook-messenger-67627eb7cfd0.herokuapp.com/broadcast/send",
-        data,
-        {
-          headers: {
-            "Content-Type": "application/json",
-            "app-access-token": appAccessToken,
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      setLoading(false); // Hide loading
-      setAlertMessage(
-        "Broadcast enviado com sucesso! Os resultados aparecerão em breve no dashboard."
-      );
-      setAlertSeverity("success");
-      setOpen(true);
-    } catch (error) {
-      setLoading(false); // Hide loading
-      console.error("Erro ao enviar broadcast:", error);
-      setAlertMessage("Erro ao enviar broadcast. Por favor, tente novamente.");
-      setAlertSeverity("error");
-      setOpen(true);
+        setLoadingMessage("Enviando broadcast, por favor aguarde...");
+        setLoading(true); // Show loading
+        await axios.post(
+          "https://webhook-messenger-67627eb7cfd0.herokuapp.com/broadcast/send",
+          data,
+          {
+            headers: {
+              "Content-Type": "application/json",
+              "app-access-token": appAccessToken,
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        setLoading(false); // Hide loading
+        setAlertMessage(
+          "Broadcast enviado com sucesso! Os resultados aparecerão em breve no dashboard."
+        );
+        setAlertSeverity("success");
+        setOpen(true);
+      } catch (error) {
+        setLoading(false); // Hide loading
+        console.error("Erro ao enviar broadcast:", error);
+        setAlertMessage("Erro ao enviar broadcast. Por favor, tente novamente.");
+        setAlertSeverity("error");
+        setOpen(true);
+      }
+    } else {
+      showSubscriptionModal();
     }
   };
-
+  const showSubscriptionModal = () => {
+    Swal.fire({
+      title: "Assinatura Necessária",
+      text: "Para continuar enviando mais broadcasts e aproveitar todos os recursos da nossa plataforma, é necessário assinar o nosso plano por apenas R$97,90 por mês.",
+      icon: "info",
+      showCancelButton: true,
+      confirmButtonText: "Vamos lá!",
+      cancelButtonText: "Cancelar",
+      customClass: {
+        confirmButton: "swal2-confirm",
+        cancelButton: "swal2-cancel",
+      },
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        const response = await axios.post('http://localhost:3030/payment/checkoutSession', {userId:userId});
+        window.open(response.data.url, '_blank');
+        window.location.reload()
+      }
+    });
+  };
   const verifyButtonss = async (buttons) => {
     if (!buttons[0].title || !buttons[0].url) {
       return [];

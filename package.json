@@ -30,6 +30,7 @@
     "styled-components": "^6.1.12",
     "stylis": "4.1.4",
     "stylis-plugin-rtl": "2.1.1",
+    "sweetalert2": "^11.14.0",
     "yup": "1.1.1"
   },
   "scripts": {

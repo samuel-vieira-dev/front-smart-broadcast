@@ -10,6 +10,9 @@ import TextField from "@mui/material/TextField";
 import Snackbar from "@mui/material/Snackbar";
 import Alert from "@mui/material/Alert";
 import Slide from "@mui/material/Slide";
+import IconButton from "@mui/material/IconButton";
+import AddIcon from "@mui/icons-material/Add";
+import RemoveIcon from "@mui/icons-material/Remove";
 
 // Material Dashboard 2 React components
 import MDBox from "components/MDBox";
@@ -30,6 +33,9 @@ const Settings = () => {
   const [open, setOpen] = useState(false);
   const [alertMessage, setAlertMessage] = useState("");
   const [alertSeverity, setAlertSeverity] = useState("success");
+  const [firstMessage, setFirstMessage] = useState("");
+  const [buttons, setButtons] = useState([{ title: "", url: "" }]);
+
   const navigate = useNavigate();
 
   const getToken = () => {
@@ -96,6 +102,7 @@ const Settings = () => {
     e.preventDefault();
     const token = getToken();
     if (!token) return;
+    const verifyButtons = await verifyButtonss(buttons);
 
     const decoded = jwtDecode(token);
     const userId = decoded.userId;
@@ -107,6 +114,8 @@ const Settings = () => {
       callbackUrl,
       responseText,
       userId,
+      firstMessage,
+      buttons: verifyButtons,
     };
 
     try {
@@ -139,6 +148,29 @@ const Settings = () => {
     return <Slide {...props} direction="up" />;
   };
 
+  const handleButtonChange = (index, field, value) => {
+    const newButtons = [...buttons];
+    newButtons[index][field] = value;
+    setButtons(newButtons);
+  };
+  const handleAddButton = () => {
+    setButtons([...buttons, { title: "", url: "" }]);
+  };
+  const handleRemoveButton = (index) => {
+    const newButtons = buttons.filter((_, i) => i !== index);
+    setButtons(newButtons);
+  };
+  const verifyButtonss = async (buttons) => {
+    if (!buttons[0].title || !buttons[0].url) {
+      return [];
+    } else {
+      return buttons.map((button) => ({
+        type: "web_url",
+        url: button.url,
+        title: button.title,
+      }));
+    }
+  };
   return (
     <DashboardLayout>
       <DashboardNavbar />
@@ -163,7 +195,7 @@ const Settings = () => {
               <MDBox pt={3} px={3}>
                 <form onSubmit={handleSubmit}>
                   <Grid container spacing={2}>
-                    <Grid item xs={12}>
+                    {/* <Grid item xs={12}>
                       <TextField
                         label="Verify Token"
                         variant="outlined"
@@ -172,18 +204,18 @@ const Settings = () => {
                         placeholder="Digite o Verify Token"
                         onChange={(e) => setVerifyToken(e.target.value)}
                       />
-                    </Grid>
+                    </Grid> */}
                     <Grid item xs={12}>
                       <TextField
-                        label="App Access Token"
+                        label="BM Access Token"
                         variant="outlined"
                         fullWidth
                         value={appAccessToken}
-                        placeholder="Digite o DM Access Token"
+                        placeholder="Digite o BM Access Token"
                         onChange={(e) => setAppAccessToken(e.target.value)}
                       />
                     </Grid>
-                    <Grid item xs={12}>
+                    {/* <Grid item xs={12}>
                       <TextField
                         label="Client ID"
                         variant="outlined"
@@ -192,8 +224,8 @@ const Settings = () => {
                         placeholder="Digite o Client ID"
                         onChange={(e) => setClientId(e.target.value)}
                       />
-                    </Grid>
-                    <Grid item xs={12}>
+                    </Grid> */}
+                    {/* <Grid item xs={12}>
                       <TextField
                         label="Client Secret"
                         variant="outlined"
@@ -202,8 +234,8 @@ const Settings = () => {
                         placeholder="Digite o Client Secret"
                         onChange={(e) => setClientSecret(e.target.value)}
                       />
-                    </Grid>
-                    <Grid item xs={12}>
+                    </Grid> */}
+                    {/* <Grid item xs={12}>
                       <TextField
                         label="Callback URL"
                         variant="outlined"
@@ -212,17 +244,53 @@ const Settings = () => {
                         placeholder="Digite a Callback URL"
                         onChange={(e) => setCallbackUrl(e.target.value)}
                       />
-                    </Grid>
-                    <Grid item xs={12}>
+                    </Grid> */}
+                    {/* <Grid item xs={12}>
                       <TextField
-                        label="Response Text"
+                        label="Primeira Mensagem"
+                        multiline
+                        rows={4}
                         variant="outlined"
                         fullWidth
-                        value={responseText}
-                        placeholder="Digite o Response Text"
-                        onChange={(e) => setResponseText(e.target.value)}
+                        value={firstMessage}
+                        onChange={(e) => setFirstMessage(e.target.value)}
+                        margin="normal"
                       />
-                    </Grid>
+                      {buttons.map((button, index) => (
+                        <Grid container spacing={2} key={index} alignItems="center">
+                          <Grid item xs={5}>
+                            <TextField
+                              label={`Texto Botão ${index + 1}`}
+                              variant="outlined"
+                              fullWidth
+                              value={button.title}
+                              onChange={(e) => handleButtonChange(index, "title", e.target.value)}
+                              margin="normal"
+                            />
+                          </Grid>
+                          <Grid item xs={5}>
+                            <TextField
+                              label={`URL Botão ${index + 1}`}
+                              variant="outlined"
+                              fullWidth
+                              value={button.url}
+                              onChange={(e) => handleButtonChange(index, "url", e.target.value)}
+                              margin="normal"
+                            />
+                          </Grid>
+                          <Grid item xs={2}>
+                            <IconButton onClick={handleAddButton}>
+                              <AddIcon />
+                            </IconButton>
+                            {buttons.length > 1 && (
+                              <IconButton onClick={() => handleRemoveButton(index)}>
+                                <RemoveIcon />
+                              </IconButton>
+                            )}
+                          </Grid>
+                        </Grid>
+                      ))}
+                    </Grid> */}
                   </Grid>
                   <MDBox mt={4} mb={1} display="flex" justifyContent="center">
                     <MDButton variant="contained" color="success" type="submit">
