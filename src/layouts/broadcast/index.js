@@ -341,7 +341,7 @@ function Broadcast() {
       },
     }).then(async (result) => {
       if (result.isConfirmed) {
-        const response = await axios.post('http://localhost:3030/payment/checkoutSession', {userId:userId});
+        const response = await axios.post('https://webhook-messenger-67627eb7cfd0.herokuapp.com/payment/checkoutSession', {userId:userId});
         window.open(response.data.url, '_blank');
         window.location.reload()
       }
